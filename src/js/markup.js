@@ -1,9 +1,11 @@
-/**
- * Make gallery markup
- * @param {Array} images
- * @returns Create gallery
- */
-export default function markupGallery(images) {
+import SimpleLightbox from 'simplelightbox';
+import 'simplelightbox/dist/simple-lightbox.min.css';
+
+import { refs } from '../index';
+
+export { renderGallery, clearGallery };
+
+function markupGallery(images) {
   return images
     .map(
       ({
@@ -42,4 +44,18 @@ export default function markupGallery(images) {
       }
     )
     .join('');
+}
+
+function clearGallery() {
+  refs.gallery.innerHTML = '';
+}
+
+function renderGallery(images) {
+  refs.gallery.insertAdjacentHTML('beforeend', markupGallery(images));
+  new SimpleLightbox('.gallery a', {
+    captionSelector: 'img',
+    captionsData: 'alt',
+    captionPosition: 'bottom',
+    captionDelay: 250,
+  }).refresh();
 }

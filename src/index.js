@@ -1,95 +1,88 @@
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import SimpleLightbox from 'simplelightbox';
-
-import 'simplelightbox/dist/simple-lightbox.min.css';
+import { searchParams, pixabayApiService } from './js/pixabayApiService';
+import { renderGallery, clearGallery } from './js/markup';
 import './css/styles.css';
 
-import PixabayApiService from './js/pixabay-service';
-import markupGallery from './js/markup';
+export { refs };
 
 const refs = {
   searchForm: document.querySelector('#search-form'),
-  loadMoreBtn: document.querySelector('.load-more'),
   gallery: document.querySelector('.gallery'),
+  guard: document.querySelector('.js-guard'),
 };
 
-const pixabayApiService = new PixabayApiService();
-
 refs.searchForm.addEventListener('submit', onSubmit);
-refs.loadMoreBtn.addEventListener('click', onLoadMoreBtnClick);
+
+let totalPages = 0;
+
+let options = {
+  root: null,
+  rootMargin: '1200px',
+  threshold: 0,
+};
+
+let observer = new IntersectionObserver(handlerPagination, options);
 
 async function onSubmit(evt) {
   evt.preventDefault();
-  pixabayApiService.query = evt.target.searchQuery.value.trim();
-  pixabayApiService.resetPage();
-  refs.loadMoreBtn.classList.add('is-hidden');
-  if (!pixabayApiService.query) {
-    clearGallery();
+  clearGallery();
+  observer.unobserve(refs.guard);
+  const formData = new FormData(evt.currentTarget);
+  formData.forEach((value, key) => {
+    searchParams[key] = value;
+  });
+
+  if (!searchParams.q) {
+    Notify.warning(
+      "Sorry, your search query can't be empty. Please try again."
+    );
     return;
   }
+  searchParams.page = 1;
+
   try {
-    const data = await pixabayApiService.fetchImages();
-    const totalHits = await data.totalHits;
-    if (totalHits === 0) {
-      clearGallery();
+    const data = await pixabayApiService(searchParams);
+
+    if (data.totalHits === 0) {
       Notify.failure(
         'Sorry, there are no images matching your search query. Please try again.'
       );
       return;
     }
-    Notify.success(`Hooray! We found ${totalHits} images.`);
-    pixabayApiService.maxPage = Math.ceil(
-      totalHits / pixabayApiService.per_page
-    );
-    clearGallery();
+
+    Notify.success(`Hooray! We found ${data.totalHits} images.`);
+
+    totalPages = calculateTotalPages(data.totalHits, searchParams.per_page);
     renderGallery(data.hits);
-    if (pixabayApiService.maxPage > 1) {
-      refs.loadMoreBtn.classList.remove('is-hidden');
+    if (totalPages > searchParams.page) {
+      observer.observe(refs.guard);
     }
-    pixabayApiService.incrementPage();
   } catch (error) {
     console.error(error.message);
   }
 }
 
-async function onLoadMoreBtnClick(evt) {
-  try {
-    const data = await pixabayApiService.fetchImages();
-    renderGallery(data.hits);
-    smothScroll();
-    if (pixabayApiService.maxPage === pixabayApiService.page) {
-      Notify.warning(
-        "We're sorry, but you've reached the end of search results."
-      );
-      refs.loadMoreBtn.classList.add('is-hidden');
-      return;
+function handlerPagination(entries, observer) {
+  entries.forEach(async entry => {
+    if (entry.isIntersecting) {
+      searchParams.page += 1;
+      try {
+        const data = await pixabayApiService(searchParams);
+        renderGallery(data.hits);
+
+        if (totalPages <= searchParams.page) {
+          observer.unobserve(refs.guard);
+          Notify.warning(
+            "We're sorry, but you've reached the end of search results."
+          );
+        }
+      } catch (error) {
+        console.error(error.message);
+      }
     }
-    pixabayApiService.incrementPage();
-  } catch (error) {
-    console.error(error.message);
-  }
-}
-
-function clearGallery() {
-  refs.gallery.innerHTML = '';
-}
-
-function renderGallery(images) {
-  refs.gallery.insertAdjacentHTML('beforeend', markupGallery(images));
-  new SimpleLightbox('.gallery a', {
-    captionSelector: 'img',
-    captionsData: 'alt',
-    captionPosition: 'bottom',
-    captionDelay: 250,
-  }).refresh();
-}
-
-function smothScroll() {
-  const { height: cardHeight } = document
-    .querySelector('.gallery')
-    .firstElementChild.getBoundingClientRect();
-  window.scrollBy({
-    top: cardHeight * 2,
-    behavior: 'smooth',
   });
+}
+
+function calculateTotalPages(totalHits, perPage) {
+  return Math.ceil(totalHits / perPage);
 }
