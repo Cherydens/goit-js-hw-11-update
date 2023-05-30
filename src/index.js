@@ -17,7 +17,7 @@ let totalPages = 0;
 
 let options = {
   root: null,
-  rootMargin: '1200px',
+  rootMargin: '600px',
   threshold: 0,
 };
 

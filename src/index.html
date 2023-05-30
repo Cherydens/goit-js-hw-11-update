@@ -7,29 +7,38 @@
     <title>Homework 11 - Update</title>
   </head>
   <body>
-    <form class="search-form" id="search-form">
-      <label
-        >Image type
-        <select name="image_type">
-          <option value="all">All</option>
-          <option value="photo">Photo</option>
-          <option value="illustration">Illustration</option>
-          <option value="vector">Vector</option>
-        </select>
-      </label>
-      <input
-        type="text"
-        name="q"
-        autocomplete="off"
-        placeholder="Search images..."
-      />
-      <button type="submit">Search</button>
-    </form>
+    <header id="header" class="header">
+      <form class="search-form" id="search-form">
+        <label
+          >Image type
+          <select name="image_type">
+            <option value="all" selected>All</option>
+            <option value="photo">Photo</option>
+            <option value="illustration">Illustration</option>
+            <option value="vector">Vector</option>
+          </select>
+        </label>
+        <label
+          >Orientation
+          <select name="orientation">
+            <option value="all" selected>All</option>
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+          </select>
+        </label>
+        <input
+          type="text"
+          name="q"
+          autocomplete="off"
+          placeholder="Search images..."
+        />
+        <button type="submit">Search</button>
+      </form>
+    </header>
 
     <div class="gallery">
       <!-- Картки зображень -->
     </div>
-
     <div class="js-guard"></div>
 
     <script src="index.js" type="module"></script>
